@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ agent_name }} – {{ institution }}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  TOP NAV                                  ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<nav class="navbar navbar-expand-lg sticky-top" id="mainNav">
+  <div class="container-xl">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+      <span class="brand-icon"><i class="bi bi-mortarboard-fill"></i></span>
+      <span class="brand-text">{{ agent_name }}</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ms-auto align-items-center gap-1">
+        <li class="nav-item"><a class="nav-link" href="#dashboard"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="#courses"><i class="bi bi-book me-1"></i>Courses</a></li>
+        <li class="nav-item"><a class="nav-link" href="#eligibility"><i class="bi bi-clipboard-check me-1"></i>Eligibility</a></li>
+        <li class="nav-item"><a class="nav-link" href="#deadlines"><i class="bi bi-calendar-event me-1"></i>Deadlines</a></li>
+        <li class="nav-item"><a class="nav-link" href="#chat"><i class="bi bi-chat-dots me-1"></i>AI Chat</a></li>
+        <li class="nav-item ms-2">
+          <button class="btn btn-sm btn-outline-secondary theme-toggle" id="themeToggle" title="Toggle dark mode">
+            <i class="bi bi-moon-stars-fill"></i>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  HERO                                     ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<section class="hero-section">
+  <div class="hero-bg-shapes"></div>
+  <div class="container-xl text-center hero-content">
+    <div class="hero-badge mb-3">
+      <i class="bi bi-stars me-1"></i> Powered by IBM Watsonx.ai · Granite
+    </div>
+    <h1 class="hero-title">Your AI Admission Counsellor</h1>
+    <p class="hero-subtitle">Personalised guidance, eligibility analysis, and deadline tracking — all in one place at <strong>{{ institution }}</strong>.</p>
+    <div class="d-flex justify-content-center gap-3 flex-wrap mt-4">
+      <a href="#chat" class="btn btn-primary btn-lg hero-cta">
+        <i class="bi bi-chat-dots-fill me-2"></i>Chat with {{ agent_name }}
+      </a>
+      <a href="#eligibility" class="btn btn-outline-primary btn-lg">
+        <i class="bi bi-clipboard-check me-2"></i>Check Eligibility
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  DASHBOARD                                ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<section class="section-pad" id="dashboard">
+  <div class="container-xl">
+    <div class="section-header">
+      <h2><i class="bi bi-speedometer2 me-2 accent"></i>Admission Dashboard</h2>
+      <p class="text-muted">Live snapshot of programmes, rounds, and tests at {{ institution }}.</p>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="row g-4 mb-5" id="statCards">
+      <div class="col-6 col-md-3">
+        <div class="stat-card" data-delay="0">
+          <div class="stat-icon bg-primary-soft"><i class="bi bi-collection-fill"></i></div>
+          <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-label">Total Programmes</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card" data-delay="100">
+          <div class="stat-icon bg-success-soft"><i class="bi bi-mortarboard"></i></div>
+          <div class="stat-value" id="statUG">—</div>
+          <div class="stat-label">Undergraduate</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card" data-delay="200">
+          <div class="stat-icon bg-warning-soft"><i class="bi bi-award-fill"></i></div>
+          <div class="stat-value" id="statGrad">—</div>
+          <div class="stat-label">Graduate</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card" data-delay="300">
+          <div class="stat-icon bg-info-soft"><i class="bi bi-calendar2-check"></i></div>
+          <div class="stat-value" id="statRounds">—</div>
+          <div class="stat-label">App. Rounds</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flagship & Tests -->
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card h-100">
+          <div class="card-header"><i class="bi bi-star-fill me-2 text-warning"></i>Flagship Programmes</div>
+          <div class="card-body" id="flagshipList">
+            <div class="skeleton-line"></div><div class="skeleton-line short"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card h-100">
+          <div class="card-header"><i class="bi bi-pencil-square me-2 text-info"></i>Accepted Tests &amp; Benchmarks</div>
+          <div class="card-body" id="testBenchmarks">
+            <div class="skeleton-line"></div><div class="skeleton-line short"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  COURSE EXPLORER                          ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<section class="section-pad bg-surface" id="courses">
+  <div class="container-xl">
+    <div class="section-header">
+      <h2><i class="bi bi-book me-2 accent"></i>Course Explorer</h2>
+      <p class="text-muted">Browse, filter, and find the perfect programme for your goals.</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="row g-2 mb-4 align-items-center">
+      <div class="col-12 col-md-4">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" class="form-control" id="courseSearch" placeholder="Search programmes…" />
+        </div>
+      </div>
+      <div class="col-auto">
+        <div class="btn-group" role="group">
+          <button type="button" class="btn btn-outline-primary active" data-level="">All</button>
+          <button type="button" class="btn btn-outline-primary" data-level="Undergraduate">UG</button>
+          <button type="button" class="btn btn-outline-primary" data-level="Graduate">Grad</button>
+        </div>
+      </div>
+      <div class="col-auto ms-auto">
+        <span class="badge bg-primary-soft text-primary" id="courseCount">Loading…</span>
+      </div>
+    </div>
+
+    <div class="row g-4" id="courseGrid">
+      <!-- Injected by JS -->
+      <div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  ELIGIBILITY CHECKER                      ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<section class="section-pad" id="eligibility">
+  <div class="container-xl">
+    <div class="section-header">
+      <h2><i class="bi bi-clipboard-check me-2 accent"></i>Eligibility Checker</h2>
+      <p class="text-muted">Enter your academic profile and see which programmes you qualify for instantly.</p>
+    </div>
+
+    <div class="row g-4">
+      <!-- Form -->
+      <div class="col-lg-5">
+        <div class="card">
+          <div class="card-header"><i class="bi bi-person-badge me-2"></i>Your Academic Profile</div>
+          <div class="card-body">
+            <form id="eligibilityForm" novalidate>
+              <div class="mb-3">
+                <label class="form-label">GPA <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="elGpa" min="0" max="4" step="0.01" placeholder="e.g. 3.5" required />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Education Level</label>
+                <select class="form-select" id="elLevel">
+                  <option value="">Select…</option>
+                  <option>High School</option>
+                  <option>Bachelor's Degree</option>
+                  <option>Master's Degree</option>
+                </select>
+              </div>
+              <hr />
+              <p class="text-muted small mb-2"><i class="bi bi-info-circle me-1"></i>Enter at least one test score</p>
+              <div class="row g-2">
+                <div class="col-6"><label class="form-label small">SAT</label><input type="number" class="form-control form-control-sm" id="scoreSAT" placeholder="800–1600" /></div>
+                <div class="col-6"><label class="form-label small">ACT</label><input type="number" class="form-control form-control-sm" id="scoreACT" placeholder="1–36" /></div>
+                <div class="col-6"><label class="form-label small">GRE</label><input type="number" class="form-control form-control-sm" id="scoreGRE" placeholder="260–340" /></div>
+                <div class="col-6"><label class="form-label small">GMAT</label><input type="number" class="form-control form-control-sm" id="scoreGMAT" placeholder="200–800" /></div>
+                <div class="col-6"><label class="form-label small">TOEFL</label><input type="number" class="form-control form-control-sm" id="scoreTOEFL" placeholder="0–120" /></div>
+                <div class="col-6"><label class="form-label small">IELTS</label><input type="number" class="form-control form-control-sm" id="scoreIELTS" step="0.5" placeholder="0–9" /></div>
+              </div>
+              <button type="submit" class="btn btn-primary w-100 mt-4">
+                <i class="bi bi-search-heart me-2"></i>Check My Eligibility
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="col-lg-7">
+        <div id="eligibilityResults">
+          <div class="empty-state">
+            <i class="bi bi-clipboard2-pulse display-4 text-muted"></i>
+            <p class="mt-3 text-muted">Fill in your profile on the left and click <strong>Check My Eligibility</strong>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  DEADLINES                                ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<section class="section-pad bg-surface" id="deadlines">
+  <div class="container-xl">
+    <div class="section-header">
+      <h2><i class="bi bi-calendar-event me-2 accent"></i>Application Deadlines</h2>
+      <p class="text-muted">Never miss a critical date — all deadlines in one place.</p>
+    </div>
+    <div class="row g-3" id="deadlineCards">
+      <div class="col-12 text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  APPLICANT PROFILE                        ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<section class="section-pad" id="profile">
+  <div class="container-xl">
+    <div class="section-header">
+      <h2><i class="bi bi-person-circle me-2 accent"></i>Applicant Profile</h2>
+      <p class="text-muted">Save your details to get personalised AI responses across the session.</p>
+    </div>
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-body">
+            <form id="profileForm">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Full Name</label>
+                  <input type="text" class="form-control" id="profName" placeholder="Your name" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Country of Origin</label>
+                  <input type="text" class="form-control" id="profCountry" placeholder="e.g. India, Nigeria…" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Education Level</label>
+                  <select class="form-select" id="profLevel">
+                    <option value="">Select…</option>
+                    <option>High School</option>
+                    <option>Bachelor's Degree</option>
+                    <option>Master's Degree</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">GPA</label>
+                  <input type="number" class="form-control" id="profGpa" min="0" max="4" step="0.01" placeholder="0–4.0" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Interests (comma-separated)</label>
+                  <input type="text" class="form-control" id="profInterests" placeholder="e.g. CS, MBA…" />
+                </div>
+              </div>
+              <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-save me-2"></i>Save Profile</button>
+                <button type="button" class="btn btn-outline-secondary" id="clearProfile"><i class="bi bi-x-circle me-2"></i>Clear</button>
+              </div>
+            </form>
+            <div id="profileAlert" class="mt-3"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  AI CHAT                                  ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<section class="section-pad bg-surface" id="chat">
+  <div class="container-xl">
+    <div class="section-header">
+      <h2><i class="bi bi-chat-dots me-2 accent"></i>Chat with {{ agent_name }}</h2>
+      <p class="text-muted">Ask anything about admission, programmes, eligibility, scholarships, and more.</p>
+    </div>
+
+    <div class="chat-container mx-auto">
+      <!-- Chat window -->
+      <div class="chat-window" id="chatWindow">
+        <div class="chat-welcome">
+          <div class="chat-avatar"><i class="bi bi-mortarboard-fill"></i></div>
+          <div class="chat-bubble assistant">
+            👋 Hello! I'm <strong>{{ agent_name }}</strong>, your AI admission counsellor for <strong>{{ institution }}</strong>.<br><br>
+            Ask me about programmes, eligibility requirements, application deadlines, scholarships, or anything else about the admission process!
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick prompts -->
+      <div class="quick-prompts" id="quickPrompts">
+        <button class="quick-btn" data-msg="What programmes does {{ institution }} offer?">📚 Programmes</button>
+        <button class="quick-btn" data-msg="What are the application deadlines?">📅 Deadlines</button>
+        <button class="quick-btn" data-msg="Tell me about scholarship opportunities">🎓 Scholarships</button>
+        <button class="quick-btn" data-msg="What test scores do I need for Computer Science?">📝 Test Scores</button>
+        <button class="quick-btn" data-msg="How is the admission process structured?">🗺️ Process Guide</button>
+      </div>
+
+      <!-- Input bar -->
+      <div class="chat-input-row">
+        <div class="input-group">
+          <textarea class="form-control chat-textarea" id="chatInput" rows="1"
+            placeholder="Ask {{ agent_name }} anything about admissions…"></textarea>
+          <button class="btn btn-primary chat-send-btn" id="chatSend" title="Send">
+            <i class="bi bi-send-fill"></i>
+          </button>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-2">
+          <small class="text-muted"><i class="bi bi-shield-check me-1"></i>Powered by IBM Watsonx.ai Granite</small>
+          <button class="btn btn-sm btn-outline-secondary" id="clearChat"><i class="bi bi-trash me-1"></i>Clear Chat</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  FOOTER                                   ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<footer class="site-footer">
+  <div class="container-xl">
+    <div class="row align-items-center">
+      <div class="col-md-6 text-center text-md-start">
+        <strong><i class="bi bi-mortarboard-fill me-1"></i>{{ agent_name }}</strong> — {{ institution }}
+      </div>
+      <div class="col-md-6 text-center text-md-end mt-2 mt-md-0">
+        <small class="text-muted">Powered by <strong>IBM Watsonx.ai</strong> · Granite Models</small>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Course Detail Modal -->
+<div class="modal fade" id="courseModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="courseModalTitle">Programme Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="courseModalBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+        <button class="btn btn-primary" id="courseModalChat">
+          <i class="bi bi-chat-dots me-2"></i>Ask AI about this programme
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
