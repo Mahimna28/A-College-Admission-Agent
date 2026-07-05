@@ -347,6 +347,108 @@ function askAIEligibility() {
   document.getElementById("chatInput").focus();
 }
 
+// ADD THIS AFTER LINE 348
+function getFallbackResponse(query) {
+  const q = query.toLowerCase();
+  
+  if (q.includes("eligibility") || q.includes("qualify") || q.includes("cutoff") || q.includes("report")) {
+    return `📋 **Eligibility Quick Guide**
+
+• **B.Tech CSE**: 75% in 12th (PCM) + JEE Main 120+
+• **B.Tech AI & DS**: 70% in 12th + JEE Main 100+
+• **BBA**: 60% in 12th (any stream)
+• **MBBS**: 80% in 12th (PCB) + NEET 400+
+
+**Reservation**: SC/ST/OBC/EWS quotas as per Govt. of India norms.
+**Scholarships**: Merit-based for JEE Main 200+ scorers.
+
+Use the **Eligibility Checker** below for a detailed personalized report!`;
+  }
+  
+  else if (q.includes("course") || q.includes("program") || q.includes("b.tech") || q.includes("mbbs")) {
+    return `🎓 **Our Programmes**
+
+• **B.Tech CSE** — ₹2,50,000/year | JEE Main required
+• **B.Tech AI & DS** — ₹2,80,000/year | JEE Main required  
+• **B.Tech ECE** — ₹2,20,000/year | JEE Main/MHT-CET
+• **BBA** — ₹1,50,000/year | Direct admission
+• **MBBS** — ₹8,00,000/year | NEET required
+• **M.Tech CSE** — ₹2,00,000/year | GATE required
+• **MBA** — ₹4,00,000/year | CAT/MAT
+
+Browse the **Course Explorer** for full details!`;
+  }
+  
+  else if (q.includes("deadline") || q.includes("date") || q.includes("last date")) {
+    return `📅 **Important Dates**
+
+• **Round 1**: May 1
+• **Round 2**: June 15  
+• **Spot Round**: July 30
+• **Management Quota**: Aug 1 - Aug 15
+
+Don't miss the deadlines! Check the **Deadlines** section for a live countdown.`;
+  }
+  
+  else if (q.includes("fee") || q.includes("cost") || q.includes("tuition") || q.includes("₹")) {
+    return `💰 **Fee Structure (per year)**
+
+• **B.Tech CSE**: ₹2,50,000
+• **B.Tech AI & DS**: ₹2,80,000
+• **B.Tech ECE**: ₹2,20,000
+• **BBA**: ₹1,50,000
+• **MBBS**: ₹8,00,000
+• **M.Tech**: ₹2,00,000
+• **MBA**: ₹4,00,000
+
+**Hostel**: ₹60,000/year (mess included)
+**Scholarships**: Up to 100% fee waiver for merit students!`;
+  }
+  
+  else if (q.includes("scholarship") || q.includes("financial aid")) {
+    return `🎁 **Scholarship Opportunities**
+
+• **100% Fee Waiver**: JEE Main 250+ | NEET 600+
+• **50% Fee Waiver**: JEE Main 200+ | NEET 500+
+• **State Scholarships**: Available for SC/ST/OBC students
+• **Minority Scholarships**: As per state government norms
+
+Apply before **July 15**! Contact our Financial Aid Office for details.`;
+  }
+  
+  else if (q.includes("document") || q.includes("required") || q.includes("need")) {
+    return `📄 **Required Documents**
+
+1. 10th Marksheet
+2. 12th Marksheet  
+3. Entrance Exam Scorecard (JEE/NEET/CET)
+4. Caste Certificate (if applicable)
+5. Domicile Certificate
+6. Aadhaar Card
+7. Passport Size Photos (6)
+8. Application Fee Receipt (₹1,500)
+
+Keep originals + 2 photocopies ready!`;
+  }
+  
+  else {
+    return `👋 **Welcome to AdmitAI!**
+
+I'm your Indian college admission counsellor. I can help you with:
+
+• **JEE/NEET/CET** cutoffs and eligibility
+• **Course selection** (B.Tech, MBBS, BBA, MBA)
+• **Fee structure** and scholarships
+• **Admission deadlines** and document checklists
+• **Reservation quotas** and counselling process
+
+**Tip**: You can type your details like this:
+\`name :- Aarav Sharma, 12th_percentage :- 87.5, entrance_exam :- JEE Main, entrance_score :- 156\`
+
+Or use the **Eligibility Checker** below for instant analysis!`;
+  }
+}
+
 // ─── Deadlines ───────────────────────────────────────────────────────────────
 
 async function loadDeadlines() {
@@ -502,11 +604,13 @@ async function sendMessage(text) {
     const data = await res.json();
     hideTyping();
 
-    if (data.error) {
+        if (data.error) {
       if (data.setup_required) {
         appendMessage("assistant", `⚠️ **Setup Required**\n\n${data.error}\n\nPlease copy \`env.example\` to \`.env\` and add your IBM Watsonx.ai credentials, then restart the server.`);
       } else {
-        appendMessage("assistant", `❌ ${data.error}`);
+        // 🔥 GRACEFUL FALLBACK: Show helpful message instead of raw error
+        const fallbackMsg = getFallbackResponse(text);
+        appendMessage("assistant", fallbackMsg);
       }
     } else {
       appendMessage("assistant", data.reply);

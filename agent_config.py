@@ -13,124 +13,143 @@ any other code.
 AGENT_NAME = "AdmitAI"
 
 AGENT_PERSONA = (
-    "You are AdmitAI, a friendly, knowledgeable, and empathetic college "
+    "You are AdmitAI, a friendly, knowledgeable, and empathetic Indian college "
     "admission counsellor. You guide prospective students through every "
-    "step of the admission process with clarity, encouragement, and "
-    "precision. You are professional yet approachable, always supportive "
-    "of diverse backgrounds and goals."
+    "step of the Indian admission process with clarity, encouragement, and "
+    "precision. You understand Indian entrance exams, reservation categories, "
+    "state quotas, and fee structures. You are professional yet approachable."
 )
 
 # Tone options: "formal" | "friendly" | "concise" | "encouraging"
 AGENT_TONE = "friendly"
 
 # ------------------------------------------------------------------
-# 2.  INSTITUTION SPECIALIZATION
+# 2.  INSTITUTION SPECIALIZATION (INDIAN)
 # ------------------------------------------------------------------
-INSTITUTION_NAME = "Greenfield University"
-INSTITUTION_LOCATION = "United States"
+INSTITUTION_NAME = "Your College Name"  # <-- CHANGE THIS
+INSTITUTION_LOCATION = "India"
 
 # Highlight up to 5 flagship programmes
 FLAGSHIP_PROGRAMS = [
-    "Computer Science & Artificial Intelligence",
-    "Business Administration & MBA",
-    "Biomedical Engineering",
-    "Data Science & Analytics",
-    "Environmental Sciences",
+    "B.Tech Computer Science & Engineering",
+    "B.Tech Artificial Intelligence & Data Science",
+    "BBA / B.Com",
+    "MBBS / BDS",
+    "B.Sc. Biotechnology",
 ]
 
 # ------------------------------------------------------------------
-# 3.  REGIONAL ADMISSION PREFERENCES
+# 3.  REGIONAL ADMISSION PREFERENCES (INDIAN)
 # ------------------------------------------------------------------
-REGION = "North America"
+REGION = "India"
 
-# Accepted standardised tests and typical cut-off ranges
+# Accepted Indian entrance exams and typical cut-off ranges
 ACCEPTED_TESTS = {
-    "SAT": {"min": 1000, "competitive": 1350, "max": 1600},
-    "ACT": {"min": 20,   "competitive": 30,   "max": 36},
-    "GRE": {"min": 290,  "competitive": 320,  "max": 340},
-    "GMAT": {"min": 500, "competitive": 680,  "max": 800},
-    "TOEFL": {"min": 79, "competitive": 100,  "max": 120},
-    "IELTS": {"min": 6.0,"competitive": 7.0,  "max": 9.0},
+    "JEE Main": {"min": 60, "competitive": 150, "max": 300},
+    "JEE Advanced": {"min": 50, "competitive": 120, "max": 300},
+    "NEET": {"min": 300, "competitive": 550, "max": 720},
+    "MHT-CET": {"min": 80, "competitive": 140, "max": 200},
+    "WBJEE": {"min": 70, "competitive": 120, "max": 200},
+    "CAT": {"min": 50, "competitive": 90, "max": 100},
+    "MAT": {"min": 400, "competitive": 600, "max": 800},
+    "CLAT": {"min": 80, "competitive": 100, "max": 150},
+    "NATA": {"min": 70, "competitive": 120, "max": 200},
 }
 
-# GPA scale used at this institution
-GPA_SCALE = 4.0
-MINIMUM_GPA = 2.5
-COMPETITIVE_GPA = 3.5
+# Indian academic scale (percentage or 10-point CGPA)
+GPA_SCALE = 10.0
+MINIMUM_GPA = 6.0          # 60% or 6.0 CGPA
+COMPETITIVE_GPA = 8.5      # 85% or 8.5 CGPA
 
 # Academic year structure
-ACADEMIC_YEAR_START = "August"
-APPLICATION_ROUNDS = ["Early Decision (Nov 1)", "Regular Decision (Jan 15)", "Transfer (Mar 1)"]
+ACADEMIC_YEAR_START = "July"
+APPLICATION_ROUNDS = [
+    "Round 1 (May 1)",
+    "Round 2 (June 15)",
+    "Spot Round (July 30)",
+    "Management Quota (Aug 1 - Aug 15)"
+]
 
 # ------------------------------------------------------------------
-# 4.  COURSE & PROGRAMME CATALOGUE
+# 4.  COURSE & PROGRAMME CATALOGUE (INDIAN)
 # ------------------------------------------------------------------
 COURSES = [
     {
-        "name": "B.Sc. Computer Science",
+        "name": "B.Tech Computer Science & Engineering",
         "level": "Undergraduate",
         "duration": "4 years",
-        "min_gpa": 3.0,
-        "required_tests": ["SAT", "ACT"],
-        "min_test_score": {"SAT": 1200, "ACT": 25},
-        "tuition_usd_per_year": 32000,
-        "description": "Covers algorithms, AI, software engineering, and systems design.",
-        "career_paths": ["Software Engineer", "Data Scientist", "AI Researcher"],
+        "min_gpa": 7.5,
+        "required_tests": ["JEE Main"],
+        "min_test_score": {"JEE Main": 120},
+        "tuition_inr_per_year": 250000,
+        "description": "Core CS, AI, ML, cloud computing, and full-stack development.",
+        "career_paths": ["Software Engineer", "Data Scientist", "Product Manager"],
     },
     {
-        "name": "B.B.A. Business Administration",
+        "name": "B.Tech AI & Data Science",
         "level": "Undergraduate",
         "duration": "4 years",
-        "min_gpa": 2.8,
-        "required_tests": ["SAT", "ACT"],
-        "min_test_score": {"SAT": 1100, "ACT": 22},
-        "tuition_usd_per_year": 29000,
-        "description": "Comprehensive business education covering finance, marketing, and strategy.",
-        "career_paths": ["Manager", "Entrepreneur", "Consultant"],
+        "min_gpa": 7.0,
+        "required_tests": ["JEE Main"],
+        "min_test_score": {"JEE Main": 100},
+        "tuition_inr_per_year": 280000,
+        "description": "Deep learning, NLP, computer vision, and big data analytics.",
+        "career_paths": ["AI Engineer", "ML Engineer", "Data Analyst"],
     },
     {
-        "name": "M.Sc. Data Science",
-        "level": "Graduate",
-        "duration": "2 years",
-        "min_gpa": 3.2,
-        "required_tests": ["GRE", "GMAT"],
-        "min_test_score": {"GRE": 310, "GMAT": 620},
-        "tuition_usd_per_year": 38000,
-        "description": "Advanced ML, big data, statistical modelling, and real-world capstone projects.",
-        "career_paths": ["Data Scientist", "ML Engineer", "Analytics Lead"],
+        "name": "B.Tech Electronics & Communication",
+        "level": "Undergraduate",
+        "duration": "4 years",
+        "min_gpa": 6.5,
+        "required_tests": ["JEE Main", "MHT-CET"],
+        "min_test_score": {"JEE Main": 90, "MHT-CET": 100},
+        "tuition_inr_per_year": 220000,
+        "description": "VLSI, embedded systems, IoT, and wireless communication.",
+        "career_paths": ["Hardware Engineer", "IoT Developer", "Telecom Engineer"],
     },
     {
-        "name": "M.B.A.",
+        "name": "BBA",
+        "level": "Undergraduate",
+        "duration": "3 years",
+        "min_gpa": 6.0,
+        "required_tests": [],
+        "min_test_score": {},
+        "tuition_inr_per_year": 150000,
+        "description": "Business management, marketing, finance, and entrepreneurship.",
+        "career_paths": ["Manager", "Entrepreneur", "Marketing Executive"],
+    },
+    {
+        "name": "MBBS",
+        "level": "Undergraduate",
+        "duration": "5.5 years",
+        "min_gpa": 8.0,
+        "required_tests": ["NEET"],
+        "min_test_score": {"NEET": 400},
+        "tuition_inr_per_year": 800000,
+        "description": "Medical sciences, clinical practice, and healthcare.",
+        "career_paths": ["Doctor", "Surgeon", "Medical Researcher"],
+    },
+    {
+        "name": "M.Tech Computer Science",
         "level": "Graduate",
         "duration": "2 years",
-        "min_gpa": 3.0,
-        "required_tests": ["GMAT", "GRE"],
-        "min_test_score": {"GMAT": 600, "GRE": 305},
-        "tuition_usd_per_year": 45000,
+        "min_gpa": 8.0,
+        "required_tests": ["GATE"],
+        "min_test_score": {"GATE": 500},
+        "tuition_inr_per_year": 200000,
+        "description": "Advanced algorithms, research methodology, and thesis.",
+        "career_paths": ["Research Scientist", "Professor", "Tech Lead"],
+    },
+    {
+        "name": "MBA",
+        "level": "Graduate",
+        "duration": "2 years",
+        "min_gpa": 7.0,
+        "required_tests": ["CAT", "MAT"],
+        "min_test_score": {"CAT": 70, "MAT": 500},
+        "tuition_inr_per_year": 400000,
         "description": "Leadership, strategy, finance, and global business management.",
         "career_paths": ["Executive", "Consultant", "Startup Founder"],
-    },
-    {
-        "name": "B.Eng. Biomedical Engineering",
-        "level": "Undergraduate",
-        "duration": "4 years",
-        "min_gpa": 3.3,
-        "required_tests": ["SAT", "ACT"],
-        "min_test_score": {"SAT": 1300, "ACT": 28},
-        "tuition_usd_per_year": 34000,
-        "description": "Combines engineering principles with medical sciences for healthcare innovation.",
-        "career_paths": ["Biomedical Engineer", "Medical Device Designer", "Clinical Researcher"],
-    },
-    {
-        "name": "B.Sc. Environmental Sciences",
-        "level": "Undergraduate",
-        "duration": "4 years",
-        "min_gpa": 2.7,
-        "required_tests": ["SAT", "ACT"],
-        "min_test_score": {"SAT": 1050, "ACT": 21},
-        "tuition_usd_per_year": 27000,
-        "description": "Climate science, ecology, sustainability, and environmental policy.",
-        "career_paths": ["Environmental Consultant", "Policy Analyst", "Conservation Scientist"],
     },
 ]
 
@@ -144,7 +163,8 @@ SAFETY_RULES = """
 - Decline to discuss unrelated, offensive, or harmful topics politely.
 - If unsure about specific data, advise the user to verify with the official admissions office.
 - Always respect the student's autonomy and choices.
-- Do not discriminate based on race, religion, gender, nationality, or socioeconomic status.
+- Do not discriminate based on caste, religion, gender, nationality, or socioeconomic status.
+- Respect Indian reservation policies (SC/ST/OBC/EWS) and provide accurate quota information.
 """
 
 # ------------------------------------------------------------------
@@ -169,10 +189,11 @@ def build_system_prompt(applicant_profile: dict | None = None) -> str:
 ## Current Applicant Profile
 - Name: {applicant_profile.get('name', 'Not provided')}
 - Education Level: {applicant_profile.get('education_level', 'Not provided')}
-- GPA: {applicant_profile.get('gpa', 'Not provided')}
+- GPA / Percentage: {applicant_profile.get('gpa', 'Not provided')}
 - Test Scores: {applicant_profile.get('test_scores', 'Not provided')}
 - Interested Programs: {applicant_profile.get('interests', 'Not provided')}
-- Country of Origin: {applicant_profile.get('country', 'Not provided')}
+- State: {applicant_profile.get('state', 'Not provided')}
+- Category: {applicant_profile.get('category', 'Not provided')}
 """
 
     programmes_list = "\n".join(f"  • {c['name']} ({c['level']}, {c['duration']})" for c in COURSES)
@@ -200,6 +221,7 @@ def build_system_prompt(applicant_profile: dict | None = None) -> str:
 
 ## Instructions
 Respond in a {AGENT_TONE} tone. {"Use bullet points, headers, and structured formatting where useful." if USE_STRUCTURED_RESPONSES else "Use plain prose."} 
-Keep responses focused on college admission guidance for {INSTITUTION_NAME}.
-When analysing eligibility, compare the student's GPA and test scores against programme requirements and give a clear verdict with actionable next steps.
+Keep responses focused on Indian college admission guidance for {INSTITUTION_NAME}.
+When analysing eligibility, compare the student's marks and test scores against programme requirements and give a clear verdict with actionable next steps.
+Use Indian context: mention entrance exams like JEE, NEET, CET, reservation categories, state quotas, and fees in INR.
 """.strip()

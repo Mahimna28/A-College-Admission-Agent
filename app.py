@@ -4,6 +4,7 @@ Flask backend powered by IBM Watsonx.ai (Granite models)
 """
 from __future__ import annotations
 
+import re
 import os
 from datetime import datetime
 
@@ -12,6 +13,7 @@ from flask import Flask, jsonify, render_template, request, session
 from ibm_watsonx_ai import APIClient, Credentials
 from ibm_watsonx_ai.foundation_models import ModelInference
 from ibm_watsonx_ai.metanames import GenTextParamsMetaNames as GenParams
+from rag_engine import retrieve_context
 
 from agent_config import (
     ACCEPTED_TESTS,
@@ -41,6 +43,70 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key-change-in-product
 # ------------------------------------------------------------------
 _watsonx_model: ModelInference | None = None
 
+
+def _parse_profile_from_message(message: str) -> dict:
+    """Extract profile fields from user messages like 'name :- Aarav Sharma'"""
+    profile = {}
+    
+    # Pattern: field_name :- value
+    # Handles multi-word values until next field or end of string
+    pattern = r'(\w+(?:_\w+)*)\s*:-\s*([^\n]+?)(?=(?:\s+\w+(?:_\w+)*\s*:-|\Z))'
+    matches = re.findall(pattern, message, re.DOTALL)
+    
+    field_map = {
+        "name": "name",
+        "age": "age",
+        "12th_percentage": "gpa",
+        "percentage": "gpa",
+        "gpa": "gpa",
+        "cgpa": "gpa",
+        "entrance_exam": "test_scores",
+        "entrance_score": "test_scores",
+        "preferred_course": "interests",
+        "course": "interests",
+        "category": "category",
+        "state": "state",
+        "budget_per_year": "budget",
+        "hostel_required": "hostel",
+        "college_type": "college_type",
+        "location_preference": "location",
+        "specialization_interest": "interests",
+        "goal": "goals",
+        "preferences": "preferences",
+        "backlog_history": "backlogs",
+        "gap_year": "gap_year",
+        "documents_ready": "documents",
+    }
+    
+    for key, value in matches:
+        value = value.strip()
+        mapped_key = field_map.get(key.lower(), key)
+        
+        if mapped_key == "test_scores":
+            # Build test_scores dict from entrance_exam and entrance_score
+            if "test_scores" not in profile:
+                profile["test_scores"] = {}
+            if "entrance_exam" in [k.lower() for k, v in matches]:
+                exam_name = dict(matches).get("entrance_exam", "JEE Main")
+                profile["test_scores"][exam_name] = value
+            else:
+                profile["test_scores"]["score"] = value
+        elif mapped_key == "interests":
+            existing = profile.get("interests", [])
+            if isinstance(existing, str):
+                existing = [existing]
+            existing.append(value)
+            profile["interests"] = existing
+        else:
+            profile[mapped_key] = value
+    
+    # Also try to extract education_level from context
+    if "b.tech" in message.lower() or "engineering" in message.lower():
+        profile["education_level"] = "High School"
+    elif "mba" in message.lower() or "m.tech" in message.lower():
+        profile["education_level"] = "Bachelor's Degree"
+    
+    return profile
 
 def _get_model() -> ModelInference:
     global _watsonx_model
@@ -83,14 +149,135 @@ def _ask_model(user_message: str, profile: dict | None = None) -> str:
     model = _get_model()
     system_prompt = build_system_prompt(profile)
 
-    # Granite chat format
-    prompt = (
-        f"<|system|>\n{system_prompt}\n<|user|>\n{user_message}\n<|assistant|>\n"
-    )
+    # 🔥 RAG: Retrieve relevant context from documents
+    rag_context = retrieve_context(user_message)
 
-    response = model.generate_text(prompt=prompt)
-    return response.strip() if response else "I'm sorry, I could not generate a response. Please try again."
+    # Build enhanced prompt with retrieved context
+    context_block = ""
+    if rag_context:
+        context_block = f"\n\n## Relevant Institutional Knowledge\n{rag_context}\n"
 
+    # Llama 3.x chat format
+    prompt = f"""<|start_header_id|>system<|end_header_id|>
+{system_prompt}{context_block}
+<|eot_id|><|start_header_id|>user<|end_header_id|>
+{user_message}
+<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+"""
+
+    try:
+        response = model.generate(prompt=prompt)
+
+        # Handle different response formats
+        if isinstance(response, dict):
+            results = response.get("results", [])
+            if results and len(results) > 0:
+                return results[0].get("generated_text", "").strip()
+            return "I'm sorry, I couldn't generate a response. Please try again."
+        elif isinstance(response, str):
+            return response.strip()
+        elif isinstance(response, list) and len(response) > 0:
+            return response[0].strip()
+        else:
+            return str(response).strip()
+
+    except Exception as e:
+        app.logger.error("Watsonx generate error: %s", e)
+        return _get_fallback_response(user_message)
+
+def _get_fallback_response(query: str) -> str:
+    """Smart fallback when AI is down — Indian context"""
+    q = query.lower()
+    
+    if any(word in q for word in ["eligibility", "qualify", "cutoff", "eligible", "report"]):
+        return """📋 **Eligibility Quick Guide**
+
+• **B.Tech CSE**: 75% in 12th (PCM) + JEE Main 120+
+• **B.Tech AI & DS**: 70% in 12th + JEE Main 100+
+• **BBA**: 60% in 12th (any stream)
+• **MBBS**: 80% in 12th (PCB) + NEET 400+
+
+**Reservation**: SC/ST/OBC/EWS quotas as per Govt. of India norms.
+**Scholarships**: Merit-based for JEE Main 200+ scorers.
+
+Use the **Eligibility Checker** below for a detailed personalized report!"""
+    
+    elif any(word in q for word in ["course", "program", "b.tech", "mbbs", "bba"]):
+        return """🎓 **Our Programmes**
+
+• **B.Tech CSE** — ₹2,50,000/year | JEE Main required
+• **B.Tech AI & DS** — ₹2,80,000/year | JEE Main required  
+• **B.Tech ECE** — ₹2,20,000/year | JEE Main/MHT-CET
+• **BBA** — ₹1,50,000/year | Direct admission
+• **MBBS** — ₹8,00,000/year | NEET required
+• **M.Tech CSE** — ₹2,00,000/year | GATE required
+• **MBA** — ₹4,00,000/year | CAT/MAT
+
+Browse the **Course Explorer** for full details!"""
+    
+    elif any(word in q for word in ["deadline", "date", "last date", "when"]):
+        return """📅 **Important Dates**
+
+• **Round 1**: May 1
+• **Round 2**: June 15  
+• **Spot Round**: July 30
+• **Management Quota**: Aug 1 - Aug 15
+
+Don't miss the deadlines! Check the **Deadlines** section for a live countdown."""
+    
+    elif any(word in q for word in ["fee", "cost", "tuition", "₹", "rs", "price"]):
+        return """💰 **Fee Structure (per year)**
+
+• **B.Tech CSE**: ₹2,50,000
+• **B.Tech AI & DS**: ₹2,80,000
+• **B.Tech ECE**: ₹2,20,000
+• **BBA**: ₹1,50,000
+• **MBBS**: ₹8,00,000
+• **M.Tech**: ₹2,00,000
+• **MBA**: ₹4,00,000
+
+**Hostel**: ₹60,000/year (mess included)
+**Scholarships**: Up to 100% fee waiver for merit students!"""
+    
+    elif any(word in q for word in ["scholarship", "financial aid", "fee waiver"]):
+        return """🎁 **Scholarship Opportunities**
+
+• **100% Fee Waiver**: JEE Main 250+ | NEET 600+
+• **50% Fee Waiver**: JEE Main 200+ | NEET 500+
+• **State Scholarships**: Available for SC/ST/OBC students
+• **Minority Scholarships**: As per state government norms
+
+Apply before **July 15**! Contact our Financial Aid Office for details."""
+    
+    elif any(word in q for word in ["document", "required", "need", "marksheet"]):
+        return """📄 **Required Documents**
+
+1. 10th Marksheet
+2. 12th Marksheet  
+3. Entrance Exam Scorecard (JEE/NEET/CET)
+4. Caste Certificate (if applicable)
+5. Domicile Certificate
+6. Aadhaar Card
+7. Passport Size Photos (6)
+8. Application Fee Receipt (₹1,500)
+
+Keep originals + 2 photocopies ready!"""
+    
+    else:
+        return """👋 **Welcome to AdmitAI!**
+
+I'm your Indian college admission counsellor. I can help you with:
+
+• **JEE/NEET/CET** cutoffs and eligibility
+• **Course selection** (B.Tech, MBBS, BBA, MBA)
+• **Fee structure** and scholarships
+• **Admission deadlines** and document checklists
+• **Reservation quotas** and counselling process
+
+**Tip**: You can type your details like this:
+`name :- Aarav Sharma, 12th_percentage :- 87.5, entrance_exam :- JEE Main, entrance_score :- 156`
+
+Or use the **Eligibility Checker** below for instant analysis!"""
 
 # ------------------------------------------------------------------
 # Eligibility analysis helper (pure Python, no LLM needed)
@@ -160,10 +347,17 @@ def api_chat():
         session["profile"] = {}
     profile = session["profile"]
 
-    # Merge any profile fields sent with this message
-    for field in ("name", "education_level", "gpa", "test_scores", "interests", "country"):
+    # 🔥 NEW: Parse profile data from user's natural language message
+    parsed_profile = _parse_profile_from_message(user_message)
+    for key, value in parsed_profile.items():
+        if value:  # Only overwrite if we got a value
+            profile[key] = value
+
+    # Also merge any explicit profile fields sent from frontend
+    for field in ("name", "education_level", "gpa", "test_scores", "interests", "country", "state", "category"):
         if field in data:
             profile[field] = data[field]
+    
     session["profile"] = profile
 
     try:
@@ -171,7 +365,7 @@ def api_chat():
         return jsonify({"reply": reply, "timestamp": datetime.utcnow().isoformat()})
     except EnvironmentError as exc:
         return jsonify({"error": str(exc), "setup_required": True}), 503
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         app.logger.error("Watsonx error: %s", exc)
         return jsonify({"error": "AI service temporarily unavailable. Please try again."}), 500
 
@@ -253,6 +447,24 @@ def api_deadlines():
         d["status"] = "passed" if delta < 0 else ("urgent" if delta <= 30 else "upcoming")
 
     return jsonify({"deadlines": deadlines})
+
+@app.route("/api/test-watsonx", methods=["GET"])
+def test_watsonx():
+    """Debug endpoint to verify Watsonx connection"""
+    try:
+        model = _get_model()
+        test_response = model.generate(prompt="Say 'IBM Watsonx is working!'")
+        return jsonify({
+            "status": "connected",
+            "model": os.getenv("GRANITE_MODEL_ID", "ibm/granite-3-3-8b-instruct"),
+            "test_response": str(test_response)[:200]
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "failed",
+            "error": str(e),
+            "hint": "Check your WATSONX_API_KEY and WATSONX_PROJECT_ID in .env"
+        }), 503
 
 
 # ------------------------------------------------------------------
