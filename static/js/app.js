@@ -617,7 +617,8 @@ async function sendMessage(text) {
     }
   } catch(err) {
     hideTyping();
-    appendMessage("assistant", "❌ Network error. Please check your connection and try again.");
+         const fallbackMsg = getFallbackResponse(text);
+     appendMessage("assistant", fallbackMsg + "\n\n---\n*Note: AI service temporarily unavailable. Showing cached guidance.*");
   } finally {
     chatState.isLoading = false;
     if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = `<i class="bi bi-send-fill"></i>`; }
