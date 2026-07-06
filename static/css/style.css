@@ -583,6 +583,35 @@ body {
   color: var(--text-muted);
 }
 
+/* ── Token Usage Card ───────────────────────────────────────── */
+.token-usage-card {
+  border-left: 3px solid var(--warning);
+}
+.token-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.1;
+  color: var(--text);
+}
+.token-lbl {
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+  margin-top: .2rem;
+}
+.token-warning {
+  background: var(--warning-soft);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-sm);
+  padding: .65rem 1rem;
+  font-size: .83rem;
+  color: #78350f;
+}
+[data-theme="dark"] .token-warning { color: var(--warning); }
+
 /* ── Animations ─────────────────────────────────────────────── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }

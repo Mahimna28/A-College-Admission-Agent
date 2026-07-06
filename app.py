@@ -4,8 +4,10 @@ Flask backend powered by IBM Watsonx.ai (Granite models)
 """
 from __future__ import annotations
 
-import re
+import hashlib
+import json
 import os
+import re
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -36,6 +38,92 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key-change-in-production")
+
+# ------------------------------------------------------------------
+# Token tracking configuration
+# ------------------------------------------------------------------
+TOKEN_LOG_FILE = "token_usage.json"
+DAILY_TOKEN_BUDGET = int(os.getenv("DAILY_TOKEN_BUDGET", "10000"))
+
+# In-memory response cache (cleared on restart)
+_response_cache: dict[str, str] = {}
+
+# Query patterns whose responses can be safely cached
+_CACHEABLE_PATTERNS = (
+    "fee", "cost", "tuition", "₹",
+    "deadline", "last date",
+    "document", "required document",
+    "eligibility", "qualify",
+    "course", "program", "programme",
+)
+
+# ------------------------------------------------------------------
+# Token helpers
+# ------------------------------------------------------------------
+
+def _save_token_usage(input_tokens: int, output_tokens: int, query: str) -> int:
+    """Append one call's token counts to TOKEN_LOG_FILE and return total used."""
+    entry = {
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "total_tokens": input_tokens + output_tokens,
+        "timestamp": datetime.utcnow().isoformat(),
+        "query": query[:100],
+    }
+    data: list = []
+    if os.path.exists(TOKEN_LOG_FILE):
+        try:
+            with open(TOKEN_LOG_FILE, "r") as fh:
+                data = json.load(fh)
+        except (json.JSONDecodeError, OSError):
+            data = []
+    data.append(entry)
+    try:
+        with open(TOKEN_LOG_FILE, "w") as fh:
+            json.dump(data, fh, indent=2)
+    except OSError as exc:
+        app.logger.warning("Could not write token log: %s", exc)
+    return entry["total_tokens"]
+
+
+def _check_token_budget() -> tuple[bool, int, int]:
+    """Return (has_budget, today_used, remaining)."""
+    if not os.path.exists(TOKEN_LOG_FILE):
+        return True, 0, DAILY_TOKEN_BUDGET
+    try:
+        with open(TOKEN_LOG_FILE, "r") as fh:
+            data = json.load(fh)
+    except (json.JSONDecodeError, OSError):
+        return True, 0, DAILY_TOKEN_BUDGET
+    today = datetime.utcnow().date().isoformat()
+    used = sum(d["total_tokens"] for d in data if d.get("timestamp", "").startswith(today))
+    remaining = DAILY_TOKEN_BUDGET - used
+    return remaining > 0, used, remaining
+
+
+# ------------------------------------------------------------------
+# Response cache helpers
+# ------------------------------------------------------------------
+
+def _cache_key(query: str, profile: dict | None) -> str:
+    profile_part = json.dumps(profile or {}, sort_keys=True)
+    return hashlib.md5(f"{query.lower().strip()}:{profile_part}".encode()).hexdigest()
+
+
+def _is_cacheable(query: str) -> bool:
+    q = query.lower()
+    return any(p in q for p in _CACHEABLE_PATTERNS)
+
+
+def _get_cached(query: str, profile: dict | None) -> str | None:
+    return _response_cache.get(_cache_key(query, profile))
+
+
+def _set_cached(query: str, profile: dict | None, response: str) -> None:
+    if len(_response_cache) >= 100:
+        _response_cache.pop(next(iter(_response_cache)))
+    _response_cache[_cache_key(query, profile)] = response
+
 
 # ------------------------------------------------------------------
 # Watsonx.ai client (lazy-initialised so the app starts even if
@@ -134,9 +222,13 @@ def _get_model() -> ModelInference:
         model_id=model_id,
         api_client=client,
         params={
-            GenParams.MAX_NEW_TOKENS: MAX_RESPONSE_TOKENS,
-            GenParams.TEMPERATURE: RESPONSE_TEMPERATURE,
-            GenParams.REPETITION_PENALTY: 1.05,
+            # ── Optimised for token conservation ──────────────────
+            GenParams.MAX_NEW_TOKENS:      MAX_RESPONSE_TOKENS,   # 450 in agent_config
+            GenParams.MIN_NEW_TOKENS:      20,
+            GenParams.TEMPERATURE:         0.5,
+            GenParams.REPETITION_PENALTY:  1.1,
+            GenParams.DECODING_METHOD:     "greedy",
+            GenParams.STOP_SEQUENCES:      ["\n\n\n", "###", "<|eot_id|>"],
         },
     )
     return _watsonx_model
@@ -146,44 +238,96 @@ def _get_model() -> ModelInference:
 # Helper: call the model
 # ------------------------------------------------------------------
 def _ask_model(user_message: str, profile: dict | None = None) -> str:
+    # ── 1. Budget guard ────────────────────────────────────────────
+    has_budget, used_today, remaining = _check_token_budget()
+    if not has_budget:
+        return (
+            "⚠️ **Daily token budget reached.**\n\n"
+            f"Used today: {used_today} / {DAILY_TOKEN_BUDGET} tokens. "
+            "Please try again tomorrow, or use the static Eligibility Checker below "
+            "for instant results without AI tokens."
+        )
+
+    # ── 2. Warn if budget is at 80 % ──────────────────────────────
+    budget_pct = (used_today / DAILY_TOKEN_BUDGET) * 100 if DAILY_TOKEN_BUDGET else 0
+
+    # ── 3. Cache lookup for common queries ────────────────────────
+    if _is_cacheable(user_message):
+        cached = _get_cached(user_message, profile)
+        if cached:
+            return cached + "\n\n_⚡ Cached response_"
+
+    # ── 4. Build prompt ────────────────────────────────────────────
     model = _get_model()
     system_prompt = build_system_prompt(profile)
 
-    # 🔥 RAG: Retrieve relevant context from documents
+    # RAG: retrieve top-2 chunks only to save tokens
     rag_context = retrieve_context(user_message)
-
-    # Build enhanced prompt with retrieved context
     context_block = ""
     if rag_context:
-        context_block = f"\n\n## Relevant Institutional Knowledge\n{rag_context}\n"
+        # Truncate RAG block hard at 400 chars to cap input tokens
+        rag_trimmed = rag_context[:400]
+        context_block = f"\n\n## Reference\n{rag_trimmed}\n"
 
-    # Llama 3.x chat format
-    prompt = f"""<|start_header_id|>system<|end_header_id|>
-{system_prompt}{context_block}
-<|eot_id|><|start_header_id|>user<|end_header_id|>
-{user_message}
-<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-"""
+    # Truncate very long user messages to cap input tokens
+    user_text = user_message[:500] if len(user_message) > 500 else user_message
 
+    prompt = (
+        f"<|start_header_id|>system<|end_header_id|>\n"
+        f"{system_prompt}{context_block}\n"
+        f"<|eot_id|><|start_header_id|>user<|end_header_id|>\n"
+        f"{user_text}\n"
+        f"<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n"
+    )
+
+    # ── 5. Call the API ────────────────────────────────────────────
     try:
         response = model.generate(prompt=prompt)
-
-        # Handle different response formats
-        if isinstance(response, dict):
-            results = response.get("results", [])
-            if results and len(results) > 0:
-                return results[0].get("generated_text", "").strip()
-            return "I'm sorry, I couldn't generate a response. Please try again."
-        elif isinstance(response, str):
-            return response.strip()
-        elif isinstance(response, list) and len(response) > 0:
-            return response[0].strip()
-        else:
-            return str(response).strip()
-
-    except Exception as e:
-        app.logger.error("Watsonx generate error: %s", e)
+    except Exception as exc:
+        app.logger.error("Watsonx generate error: %s", exc)
         return _get_fallback_response(user_message)
+
+    # ── 6. Extract generated text AND real token counts ────────────
+    generated_text = ""
+    input_tokens = 0
+    output_tokens = 0
+
+    if isinstance(response, dict):
+        results = response.get("results", [])
+        if results:
+            r = results[0]
+            generated_text = r.get("generated_text", "").strip()
+            input_tokens   = r.get("input_token_count",     len(prompt) // 4)
+            output_tokens  = r.get("generated_token_count", len(generated_text) // 4)
+        else:
+            generated_text = response.get("generated_text", str(response)).strip()
+    elif isinstance(response, str):
+        generated_text = response.strip()
+    elif isinstance(response, list) and response:
+        generated_text = str(response[0]).strip()
+    else:
+        generated_text = str(response).strip()
+
+    if not generated_text:
+        return _get_fallback_response(user_message)
+
+    # ── 7. Persist real token usage ───────────────────────────────
+    _save_token_usage(input_tokens, output_tokens, user_message)
+
+    # ── 8. Store in cache for future identical queries ─────────────
+    if _is_cacheable(user_message):
+        _set_cached(user_message, profile, generated_text)
+
+    # ── 9. Attach low-budget warning to reply if needed ───────────
+    if budget_pct >= 80:
+        _, used_now, rem_now = _check_token_budget()
+        warning = (
+            f"\n\n---\n⚠️ _Token budget {used_now}/{DAILY_TOKEN_BUDGET} used "
+            f"({int(used_now/DAILY_TOKEN_BUDGET*100)}%). {rem_now} tokens remaining today._"
+        )
+        generated_text += warning
+
+    return generated_text
 
 def _get_fallback_response(query: str) -> str:
     """Smart fallback when AI is down — Indian context"""
@@ -468,11 +612,52 @@ def test_watsonx():
 
 
 # ------------------------------------------------------------------
+# Token usage dashboard endpoint
+# ------------------------------------------------------------------
+@app.route("/api/token-usage", methods=["GET"])
+def api_token_usage():
+    _, used_today, remaining = _check_token_budget()
+    total_calls = 0
+    total_tokens = 0
+    recent_calls: list = []
+
+    if os.path.exists(TOKEN_LOG_FILE):
+        try:
+            with open(TOKEN_LOG_FILE, "r") as fh:
+                data = json.load(fh)
+            total_calls  = len(data)
+            total_tokens = sum(d.get("total_tokens", 0) for d in data)
+            recent_calls = data[-5:]
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    budget_pct = round((used_today / DAILY_TOKEN_BUDGET) * 100, 1) if DAILY_TOKEN_BUDGET else 0
+
+    return jsonify({
+        "total_calls":   total_calls,
+        "total_tokens":  total_tokens,
+        "today_used":    used_today,
+        "remaining":     remaining,
+        "budget":        DAILY_TOKEN_BUDGET,
+        "budget_pct":    budget_pct,
+        "cache_size":    len(_response_cache),
+        "recent_calls":  recent_calls,
+    })
+
+
+# ------------------------------------------------------------------
 # Health check
 # ------------------------------------------------------------------
 @app.route("/health")
 def health():
-    return jsonify({"status": "ok", "agent": AGENT_NAME, "institution": INSTITUTION_NAME})
+    _, used_today, _ = _check_token_budget()
+    return jsonify({
+        "status": "ok",
+        "agent": AGENT_NAME,
+        "institution": INSTITUTION_NAME,
+        "tokens_today": used_today,
+        "token_budget": DAILY_TOKEN_BUDGET,
+    })
 
 
 # ------------------------------------------------------------------

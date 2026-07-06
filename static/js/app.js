@@ -705,6 +705,60 @@ function initActiveNav() {
   sections.forEach(s => observer.observe(s));
 }
 
+// ─── Token Usage ─────────────────────────────────────────────────────────────
+
+async function loadTokenUsage() {
+  try {
+    const res  = await fetch("/api/token-usage");
+    if (!res.ok) return;
+    const d = await res.json();
+
+    // Fill in values
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set("tokenUsed",     d.today_used.toLocaleString());
+    set("tokenRemaining",d.remaining.toLocaleString());
+    set("tokenTotal",    d.total_calls.toLocaleString() + " calls");
+    set("tokenAllTotal", d.total_tokens.toLocaleString());
+
+    // Cache badge
+    const cb = document.getElementById("tokenCacheBadge");
+    if (cb) cb.textContent = `Cache: ${d.cache_size}`;
+
+    // Progress bar
+    const pct  = Math.min(d.budget_pct, 100);
+    const bar  = document.getElementById("tokenProgressBar");
+    const lbl  = document.getElementById("tokenPctLabel");
+    if (bar) {
+      bar.style.width = `${pct}%`;
+      bar.setAttribute("aria-valuenow", pct);
+      // Colour: green → yellow → red
+      bar.className = "progress-bar " + (
+        pct < 60 ? "bg-success" : pct < 80 ? "bg-warning" : "bg-danger"
+      );
+    }
+    if (lbl) lbl.textContent = `${d.budget_pct}%`;
+
+    // Warning banner when ≥ 80 %
+    const warn = document.getElementById("tokenWarning");
+    if (warn) {
+      if (pct >= 80) warn.classList.remove("d-none");
+      else           warn.classList.add("d-none");
+    }
+
+    // Toast on first load if budget is critical
+    if (d.budget_pct >= 80 && !sessionStorage.getItem("tokenWarnShown")) {
+      sessionStorage.setItem("tokenWarnShown", "1");
+      showToast(
+        `⚠️ Token budget at <strong>${d.budget_pct}%</strong> — ${d.remaining} tokens left today.`,
+        "warning"
+      );
+    }
+  } catch (err) {
+    // Token tracking is non-critical; fail silently
+    console.warn("Token usage fetch failed:", err);
+  }
+}
+
 // ─── Init ────────────────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -713,6 +767,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     loadCourses(),
     loadDeadlines(),
     loadProfile(),
+    loadTokenUsage(),
   ]);
   initReveal();
   initActiveNav();

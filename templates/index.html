@@ -103,6 +103,55 @@
       </div>
     </div>
 
+    <!-- Token Usage Card -->
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="card token-usage-card" id="tokenUsageCard">
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <span><i class="bi bi-lightning-charge-fill me-2 text-warning"></i>AI Token Budget — Today</span>
+            <span class="badge bg-secondary" id="tokenCacheBadge" title="Cached responses (no tokens used)">Cache: 0</span>
+          </div>
+          <div class="card-body">
+            <div class="row g-3 align-items-center">
+              <div class="col-6 col-md-3 text-center">
+                <div class="token-val" id="tokenUsed">—</div>
+                <div class="token-lbl">Used Today</div>
+              </div>
+              <div class="col-6 col-md-3 text-center">
+                <div class="token-val text-success" id="tokenRemaining">—</div>
+                <div class="token-lbl">Remaining</div>
+              </div>
+              <div class="col-6 col-md-3 text-center">
+                <div class="token-val text-muted" id="tokenTotal">—</div>
+                <div class="token-lbl">All-Time Calls</div>
+              </div>
+              <div class="col-6 col-md-3 text-center">
+                <div class="token-val text-muted" id="tokenAllTotal">—</div>
+                <div class="token-lbl">All-Time Tokens</div>
+              </div>
+            </div>
+            <!-- Progress bar -->
+            <div class="mt-3">
+              <div class="d-flex justify-content-between mb-1">
+                <small class="text-muted">Budget used</small>
+                <small id="tokenPctLabel" class="text-muted">0%</small>
+              </div>
+              <div class="progress" style="height:10px;border-radius:999px">
+                <div class="progress-bar" id="tokenProgressBar"
+                  role="progressbar" style="width:0%;border-radius:999px"
+                  aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div>
+            <!-- Low-budget warning (hidden by default) -->
+            <div id="tokenWarning" class="token-warning mt-3 d-none">
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>
+              <strong>Token budget running low!</strong> Consider using the Eligibility Checker for instant answers (no AI tokens used).
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Flagship & Tests -->
     <div class="row g-4">
       <div class="col-lg-6">

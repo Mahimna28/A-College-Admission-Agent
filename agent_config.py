@@ -170,58 +170,47 @@ SAFETY_RULES = """
 # ------------------------------------------------------------------
 # 6.  RESPONSE FORMATTING PREFERENCES
 # ------------------------------------------------------------------
-# Max tokens for AI responses
-MAX_RESPONSE_TOKENS = 900
+# Max tokens for AI responses — kept low to conserve token budget.
+# Increase only if you have ample tokens available.
+MAX_RESPONSE_TOKENS = 450
 
-# Temperature (0 = deterministic, 1 = creative)
-RESPONSE_TEMPERATURE = 0.65
+# Temperature — 0.5 gives focused, predictable answers (saves tokens via greedy decoding)
+RESPONSE_TEMPERATURE = 0.5
 
 # Use bullet points and structured output where helpful
 USE_STRUCTURED_RESPONSES = True
 
 # ------------------------------------------------------------------
 # 7.  BUILD THE SYSTEM PROMPT  (auto-assembled – do not edit below)
+#
+#  Prompt is kept intentionally compact to minimise input tokens.
+#  Every extra line here costs tokens on EVERY API call.
 # ------------------------------------------------------------------
 def build_system_prompt(applicant_profile: dict | None = None) -> str:
+    # Compact programme list — name + level only (no duration) to save tokens
+    programmes_list = " | ".join(f"{c['name']} ({c['level']})" for c in COURSES)
+
+    # Compact test benchmarks — one line
+    test_line = ", ".join(f"{k}≥{v['min']}" for k, v in ACCEPTED_TESTS.items())
+
+    # Compact admission rounds
+    rounds_line = " | ".join(APPLICATION_ROUNDS)
+
+    # Only inject profile if it has meaningful data
     profile_section = ""
     if applicant_profile:
-        profile_section = f"""
-## Current Applicant Profile
-- Name: {applicant_profile.get('name', 'Not provided')}
-- Education Level: {applicant_profile.get('education_level', 'Not provided')}
-- GPA / Percentage: {applicant_profile.get('gpa', 'Not provided')}
-- Test Scores: {applicant_profile.get('test_scores', 'Not provided')}
-- Interested Programs: {applicant_profile.get('interests', 'Not provided')}
-- State: {applicant_profile.get('state', 'Not provided')}
-- Category: {applicant_profile.get('category', 'Not provided')}
-"""
+        filled = {k: v for k, v in applicant_profile.items() if v}
+        if filled:
+            parts = [f"{k}: {v}" for k, v in filled.items()]
+            profile_section = "\nStudent: " + ", ".join(parts)
 
-    programmes_list = "\n".join(f"  • {c['name']} ({c['level']}, {c['duration']})" for c in COURSES)
-
-    return f"""
-{AGENT_PERSONA}
-
-## Institution: {INSTITUTION_NAME} — {INSTITUTION_LOCATION}
-## Region: {REGION}
-
-## Available Programmes
-{programmes_list}
-
-## Admission Rounds
-{chr(10).join(f'  • {r}' for r in APPLICATION_ROUNDS)}
-
-## Test Score Benchmarks
-{chr(10).join(f'  • {k}: min {v["min"]}, competitive {v["competitive"]}' for k, v in ACCEPTED_TESTS.items())}
-
-## Minimum GPA: {MINIMUM_GPA} / {GPA_SCALE}   |   Competitive GPA: {COMPETITIVE_GPA}
-
-## Safety & Conduct Rules
-{SAFETY_RULES}
-{profile_section}
-
-## Instructions
-Respond in a {AGENT_TONE} tone. {"Use bullet points, headers, and structured formatting where useful." if USE_STRUCTURED_RESPONSES else "Use plain prose."} 
-Keep responses focused on Indian college admission guidance for {INSTITUTION_NAME}.
-When analysing eligibility, compare the student's marks and test scores against programme requirements and give a clear verdict with actionable next steps.
-Use Indian context: mention entrance exams like JEE, NEET, CET, reservation categories, state quotas, and fees in INR.
-""".strip()
+    return (
+        f"{AGENT_PERSONA}\n\n"
+        f"Institution: {INSTITUTION_NAME}, {INSTITUTION_LOCATION}.\n"
+        f"Programmes: {programmes_list}.\n"
+        f"Rounds: {rounds_line}.\n"
+        f"Tests: {test_line}. Min GPA: {MINIMUM_GPA}/{GPA_SCALE}.\n"
+        f"Rules: Never guarantee outcomes. Fees in INR. Use reservation context (SC/ST/OBC/EWS).\n"
+        f"Reply in {AGENT_TONE} tone. Use short bullet points. Be concise — max 5-6 bullets."
+        f"{profile_section}"
+    ).strip()
