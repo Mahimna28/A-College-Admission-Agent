@@ -163,7 +163,9 @@ async function loadCourses(level = "", q = "") {
         <p>${esc(c.description)}</p>
         <div class="course-meta">
           <span><i class="bi bi-clock"></i> ${esc(c.duration)}</span>
-          <span><i class="bi bi-currency-dollar"></i> $${(c.tuition_usd_per_year || 0).toLocaleString()}/yr</span>
+          ${(c.tuition_inr_per_year || c.tuition_usd_per_year)
+            ? `<span><i class="bi bi-currency-rupee"></i> ₹${((c.tuition_inr_per_year || c.tuition_usd_per_year) / 100000).toFixed(1)}L/yr</span>`
+            : ""}
           <span><i class="bi bi-bar-chart"></i> GPA ≥ ${c.min_gpa}</span>
         </div>
         <button class="btn btn-sm btn-outline-primary mt-3 w-100">
@@ -194,10 +196,12 @@ function openCourseModal(idx) {
       <div class="col-md-6">
         <p><strong>Level:</strong> ${esc(c.level)}</p>
         <p><strong>Duration:</strong> ${esc(c.duration)}</p>
-        <p><strong>Minimum GPA:</strong> ${c.min_gpa} / 4.0</p>
-        <p><strong>Required Tests:</strong> ${(c.required_tests || []).join(", ")}</p>
+        <p><strong>Minimum GPA / %:</strong> ${c.min_gpa} / 10.0</p>
+        <p><strong>Required Tests:</strong> ${(c.required_tests || []).join(", ") || "None"}</p>
         <p><strong>Min Test Scores:</strong> ${tests}</p>
-        <p><strong>Tuition:</strong> $${(c.tuition_usd_per_year || 0).toLocaleString()} per year</p>
+        ${(c.tuition_inr_per_year || c.tuition_usd_per_year)
+          ? `<p><strong>Fees:</strong> ₹${(c.tuition_inr_per_year || c.tuition_usd_per_year).toLocaleString("en-IN")} per year</p>`
+          : ""}
       </div>
       <div class="col-md-6">
         <p><strong>Description:</strong></p>
