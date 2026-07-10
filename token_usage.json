@@ -1,0 +1,23 @@
+[
+  {
+    "input_tokens": 309,
+    "output_tokens": 110,
+    "total_tokens": 419,
+    "timestamp": "2026-07-08T04:35:36.009569",
+    "query": "What programmes does Your College Name offer?"
+  },
+  {
+    "input_tokens": 724,
+    "output_tokens": 240,
+    "total_tokens": 964,
+    "timestamp": "2026-07-08T04:38:21.265902",
+    "query": "Create my complete admission eligibility report\n\nname :- Priya Sharma\nage :- 18\n12th_percentage :- 9"
+  },
+  {
+    "input_tokens": 724,
+    "output_tokens": 245,
+    "total_tokens": 969,
+    "timestamp": "2026-07-10T12:38:32.785427",
+    "query": "Create my complete admission eligibility report\n\nname :- Priya Sharma\nage :- 18\n12th_percentage :- 9"
+  }
+]
