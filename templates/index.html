@@ -218,7 +218,7 @@
   <div class="container-xl">
     <div class="section-header">
       <h2><i class="bi bi-clipboard-check me-2 accent"></i>Eligibility Checker</h2>
-      <p class="text-muted">Enter your academic profile and see which programmes you qualify for instantly.</p>
+      <p class="text-muted">Enter your academic profile and instantly see which programmes you qualify for.</p>
     </div>
 
     <div class="row g-4">
@@ -228,29 +228,81 @@
           <div class="card-header"><i class="bi bi-person-badge me-2"></i>Your Academic Profile</div>
           <div class="card-body">
             <form id="eligibilityForm" novalidate>
+
+              <!-- 12th % / CGPA -->
               <div class="mb-3">
-                <label class="form-label">GPA <span class="text-danger">*</span></label>
-                <input type="number" class="form-control" id="elGpa" min="0" max="4" step="0.01" placeholder="e.g. 3.5" required />
+                <label class="form-label">12th % <span class="text-danger">*</span> &nbsp;<span class="text-muted fw-normal small">or CGPA (out of 10)</span></label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="elGpa" min="0" max="100" step="0.1" placeholder="e.g. 85.5" required />
+                  <select class="form-select" id="elGpaType" style="max-width:110px">
+                    <option value="percent">% marks</option>
+                    <option value="cgpa">CGPA /10</option>
+                  </select>
+                </div>
+                <div class="form-text">Enter your 12th board marks percentage or CGPA on 10-point scale.</div>
               </div>
+
+              <!-- Education Level -->
               <div class="mb-3">
-                <label class="form-label">Education Level</label>
+                <label class="form-label">Applying For</label>
                 <select class="form-select" id="elLevel">
                   <option value="">Select…</option>
-                  <option>High School</option>
-                  <option>Bachelor's Degree</option>
-                  <option>Master's Degree</option>
+                  <option value="Undergraduate">Undergraduate (after 12th)</option>
+                  <option value="Graduate">Postgraduate / Graduate</option>
                 </select>
               </div>
-              <hr />
-              <p class="text-muted small mb-2"><i class="bi bi-info-circle me-1"></i>Enter at least one test score</p>
-              <div class="row g-2">
-                <div class="col-6"><label class="form-label small">SAT</label><input type="number" class="form-control form-control-sm" id="scoreSAT" placeholder="800–1600" /></div>
-                <div class="col-6"><label class="form-label small">ACT</label><input type="number" class="form-control form-control-sm" id="scoreACT" placeholder="1–36" /></div>
-                <div class="col-6"><label class="form-label small">GRE</label><input type="number" class="form-control form-control-sm" id="scoreGRE" placeholder="260–340" /></div>
-                <div class="col-6"><label class="form-label small">GMAT</label><input type="number" class="form-control form-control-sm" id="scoreGMAT" placeholder="200–800" /></div>
-                <div class="col-6"><label class="form-label small">TOEFL</label><input type="number" class="form-control form-control-sm" id="scoreTOEFL" placeholder="0–120" /></div>
-                <div class="col-6"><label class="form-label small">IELTS</label><input type="number" class="form-control form-control-sm" id="scoreIELTS" step="0.5" placeholder="0–9" /></div>
+
+              <!-- Category -->
+              <div class="mb-3">
+                <label class="form-label">Reservation Category</label>
+                <select class="form-select" id="elCategory">
+                  <option value="General">General / Unreserved</option>
+                  <option value="OBC">OBC</option>
+                  <option value="SC">SC</option>
+                  <option value="ST">ST</option>
+                  <option value="EWS">EWS</option>
+                </select>
               </div>
+
+              <hr class="my-3"/>
+              <p class="text-muted small mb-2"><i class="bi bi-info-circle me-1"></i>Enter your entrance exam score (at least one)</p>
+
+              <!-- Indian entrance exams — 2 per row -->
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="form-label small fw-semibold">JEE Main</label>
+                  <input type="number" class="form-control form-control-sm" id="scoreJEEMain" placeholder="0 – 300" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label small fw-semibold">JEE Advanced</label>
+                  <input type="number" class="form-control form-control-sm" id="scoreJEEAdv" placeholder="0 – 300" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label small fw-semibold">NEET</label>
+                  <input type="number" class="form-control form-control-sm" id="scoreNEET" placeholder="0 – 720" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label small fw-semibold">MHT-CET</label>
+                  <input type="number" class="form-control form-control-sm" id="scoreMHTCET" placeholder="0 – 200" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label small fw-semibold">CAT <span class="text-muted fw-normal">(percentile)</span></label>
+                  <input type="number" class="form-control form-control-sm" id="scoreCAT" placeholder="0 – 100" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label small fw-semibold">MAT</label>
+                  <input type="number" class="form-control form-control-sm" id="scoreMAT" placeholder="0 – 800" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label small fw-semibold">GATE</label>
+                  <input type="number" class="form-control form-control-sm" id="scoreGATE" placeholder="0 – 1000" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label small fw-semibold">WBJEE</label>
+                  <input type="number" class="form-control form-control-sm" id="scoreWBJEE" placeholder="0 – 200" />
+                </div>
+              </div>
+
               <button type="submit" class="btn btn-primary w-100 mt-4">
                 <i class="bi bi-search-heart me-2"></i>Check My Eligibility
               </button>
@@ -304,28 +356,37 @@
               <div class="row g-3">
                 <div class="col-md-6">
                   <label class="form-label">Full Name</label>
-                  <input type="text" class="form-control" id="profName" placeholder="Your name" />
+                  <input type="text" class="form-control" id="profName" placeholder="e.g. Aarav Sharma" />
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label">Country of Origin</label>
-                  <input type="text" class="form-control" id="profCountry" placeholder="e.g. India, Nigeria…" />
+                  <label class="form-label">State</label>
+                  <input type="text" class="form-control" id="profCountry" placeholder="e.g. Maharashtra, UP…" />
                 </div>
                 <div class="col-md-4">
-                  <label class="form-label">Education Level</label>
+                  <label class="form-label">Applying For</label>
                   <select class="form-select" id="profLevel">
                     <option value="">Select…</option>
-                    <option>High School</option>
-                    <option>Bachelor's Degree</option>
-                    <option>Master's Degree</option>
+                    <option value="Undergraduate">Undergraduate (after 12th)</option>
+                    <option value="Graduate">Postgraduate / Graduate</option>
                   </select>
                 </div>
                 <div class="col-md-4">
-                  <label class="form-label">GPA</label>
-                  <input type="number" class="form-control" id="profGpa" min="0" max="4" step="0.01" placeholder="0–4.0" />
+                  <label class="form-label">12th % / CGPA</label>
+                  <input type="number" class="form-control" id="profGpa" min="0" max="100" step="0.1" placeholder="e.g. 85.5" />
                 </div>
                 <div class="col-md-4">
-                  <label class="form-label">Interests (comma-separated)</label>
-                  <input type="text" class="form-control" id="profInterests" placeholder="e.g. CS, MBA…" />
+                  <label class="form-label">Category</label>
+                  <select class="form-select" id="profCategory">
+                    <option value="General">General</option>
+                    <option value="OBC">OBC</option>
+                    <option value="SC">SC</option>
+                    <option value="ST">ST</option>
+                    <option value="EWS">EWS</option>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Programme Interests <span class="text-muted fw-normal small">(comma-separated)</span></label>
+                  <input type="text" class="form-control" id="profInterests" placeholder="e.g. B.Tech CSE, MBA, MBBS…" />
                 </div>
               </div>
               <div class="d-flex gap-2 mt-4">

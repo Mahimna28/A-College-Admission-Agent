@@ -258,32 +258,48 @@ document.addEventListener("DOMContentLoaded", () => {
 
   form.addEventListener("submit", async e => {
     e.preventDefault();
-    const gpa = parseFloat(document.getElementById("elGpa").value);
-    if (!gpa) {
-      showToast("Please enter your GPA.", "warning"); return;
-    }
+
+    // Read raw value and type (% or CGPA)
+    const rawVal  = parseFloat(document.getElementById("elGpa").value);
+    const gpaType = document.getElementById("elGpaType")?.value || "percent";
+    if (!rawVal) { showToast("Please enter your 12th % or CGPA.", "warning"); return; }
+
+    // Normalise to 10-point scale for backend comparison
+    const gpa = gpaType === "percent" ? +(rawVal / 10).toFixed(2) : rawVal;
+
+    // Collect only filled Indian exam scores
+    const scoreFields = {
+      "JEE Main":    document.getElementById("scoreJEEMain")?.value  || null,
+      "JEE Advanced":document.getElementById("scoreJEEAdv")?.value   || null,
+      "NEET":        document.getElementById("scoreNEET")?.value     || null,
+      "MHT-CET":     document.getElementById("scoreMHTCET")?.value   || null,
+      "CAT":         document.getElementById("scoreCAT")?.value      || null,
+      "MAT":         document.getElementById("scoreMAT")?.value      || null,
+      "GATE":        document.getElementById("scoreGATE")?.value     || null,
+      "WBJEE":       document.getElementById("scoreWBJEE")?.value    || null,
+    };
+    // Strip nulls / empty strings
+    const test_scores = Object.fromEntries(
+      Object.entries(scoreFields).filter(([, v]) => v && v !== "")
+    );
 
     const payload = {
       gpa,
       education_level: document.getElementById("elLevel").value,
-      test_scores: {
-        SAT:   document.getElementById("scoreSAT").value   || null,
-        ACT:   document.getElementById("scoreACT").value   || null,
-        GRE:   document.getElementById("scoreGRE").value   || null,
-        GMAT:  document.getElementById("scoreGMAT").value  || null,
-        TOEFL: document.getElementById("scoreTOEFL").value || null,
-        IELTS: document.getElementById("scoreIELTS").value || null,
-      },
+      category:        document.getElementById("elCategory")?.value || "General",
+      test_scores,
+      _display_marks:  rawVal,   // sent back to UI for display only
+      _marks_type:     gpaType,
     };
 
     const btn = form.querySelector("button[type=submit]");
-    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Analysing…`;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Checking…`;
     btn.disabled = true;
 
     try {
       const res  = await fetch("/api/eligibility", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
       const data = await res.json();
-      renderEligibility(data);
+      renderEligibility(data, payload);
     } catch(err) {
       showToast("Eligibility check failed. Please try again.", "danger");
     } finally {
@@ -293,22 +309,38 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-function renderEligibility(data) {
+function renderEligibility(data, payload = {}) {
   const container = document.getElementById("eligibilityResults");
   if (!container) return;
 
   const { eligible=[], borderline=[], ineligible=[], summary={} } = data;
-  const gpaColor = summary.gpa >= summary.competitive_gpa ? "success" : (summary.gpa >= summary.min_required ? "warning" : "danger");
+  const gpaColor = summary.gpa >= summary.competitive_gpa ? "success"
+                 : summary.gpa >= summary.min_required     ? "warning" : "danger";
+
+  // Display label: show original marks input, not normalised value
+  const marksLabel = payload._marks_type === "percent"
+    ? `${payload._display_marks}%`
+    : `CGPA ${payload._display_marks}/10`;
+  const catLabel = payload.category ? ` · Category: <strong>${esc(payload.category)}</strong>` : "";
+
+  const scoresSummary = Object.keys(payload.test_scores || {}).length
+    ? Object.entries(payload.test_scores).map(([k,v]) => `${k}: <strong>${v}</strong>`).join("  ·  ")
+    : "<span class='text-muted'>No exam score entered</span>";
 
   let html = `
-    <div class="elig-summary-bar">
+    <div class="elig-summary-bar mb-2">
       <span class="elig-summary-pill bg-success-soft text-success">${eligible.length} Eligible</span>
       <span class="elig-summary-pill bg-warning-soft" style="color:#92400e">${borderline.length} Borderline</span>
       <span class="elig-summary-pill bg-danger-soft text-danger">${ineligible.length} Ineligible</span>
     </div>
-    <div class="mb-3 p-3 rounded" style="background:var(--bg-surface);border:1px solid var(--border)">
-      <strong>Your GPA:</strong> ${summary.gpa}
-      <span class="ms-2 badge bg-${gpaColor}-soft text-${gpaColor}">${summary.gpa >= summary.competitive_gpa ? "Strong 🎉" : summary.gpa >= summary.min_required ? "Acceptable" : "Below Minimum"}</span>
+    <div class="p-3 rounded mb-3" style="background:var(--bg-surface);border:1px solid var(--border);font-size:.85rem">
+      <div><strong>12th Marks:</strong> ${marksLabel}
+        <span class="ms-2 badge bg-${gpaColor}-soft text-${gpaColor}">
+          ${summary.gpa >= summary.competitive_gpa ? "Strong 🎉" : summary.gpa >= summary.min_required ? "Acceptable ✓" : "Below Minimum ✗"}
+        </span>
+        ${catLabel}
+      </div>
+      <div class="mt-1 text-muted" style="font-size:.78rem">${scoresSummary}</div>
     </div>`;
 
   if (eligible.length) {
@@ -316,7 +348,7 @@ function renderEligibility(data) {
     html += eligible.map(c => elig_item(c, "eligible")).join("");
   }
   if (borderline.length) {
-    html += `<div class="elig-group-header text-warning"><i class="bi bi-exclamation-circle-fill me-1"></i>Borderline (needs improvement)</div>`;
+    html += `<div class="elig-group-header" style="color:#d97706"><i class="bi bi-exclamation-circle-fill me-1"></i>Borderline — Improve your score</div>`;
     html += borderline.map(c => elig_item(c, "borderline")).join("");
   }
   if (ineligible.length) {
@@ -342,10 +374,23 @@ function elig_item(c, status) {
 }
 
 function askAIEligibility() {
-  const gpa = document.getElementById("elGpa").value;
-  const sat = document.getElementById("scoreSAT").value;
-  const gre = document.getElementById("scoreGRE").value;
-  const msg = `Based on my profile — GPA: ${gpa}${sat?`, SAT: ${sat}`:""}${gre?`, GRE: ${gre}`:""} — which programmes should I focus on and what can I do to improve my chances?`;
+  const marks    = document.getElementById("elGpa")?.value;
+  const gpaType  = document.getElementById("elGpaType")?.value || "percent";
+  const category = document.getElementById("elCategory")?.value || "General";
+  const jee      = document.getElementById("scoreJEEMain")?.value;
+  const neet     = document.getElementById("scoreNEET")?.value;
+  const cat      = document.getElementById("scoreCAT")?.value;
+  const gate     = document.getElementById("scoreGATE")?.value;
+
+  const marksStr = marks ? (gpaType === "percent" ? `${marks}% in 12th` : `CGPA ${marks}/10`) : "";
+  const examStr  = [
+    jee  ? `JEE Main: ${jee}`  : "",
+    neet ? `NEET: ${neet}`     : "",
+    cat  ? `CAT: ${cat}%ile`   : "",
+    gate ? `GATE: ${gate}`     : "",
+  ].filter(Boolean).join(", ");
+
+  const msg = `My profile: ${marksStr}${examStr ? `, ${examStr}` : ""}, Category: ${category}. Which programmes am I eligible for and what steps should I take to improve my admission chances?`;
   document.getElementById("chatInput").value = msg;
   document.getElementById("chat").scrollIntoView({ behavior:"smooth" });
   document.getElementById("chatInput").focus();
