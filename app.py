@@ -1,6 +1,6 @@
 """
 app.py  –  College Admission Agent
-Flask backend powered by IBM Watsonx.ai (Granite models)
+Flask backend powered by IBM Watsonx.ai (Llama models)
 """
 from __future__ import annotations
 
@@ -204,7 +204,7 @@ def _get_model() -> ModelInference:
     api_key = os.getenv("WATSONX_API_KEY", "")
     project_id = os.getenv("WATSONX_PROJECT_ID", "")
     url = os.getenv("WATSONX_URL", "https://au-syd.ml.cloud.ibm.com")
-    model_id = os.getenv("GRANITE_MODEL_ID", "ibm/granite-3-3-8b")
+    model_id = os.getenv("MODEL_ID", "meta-llama/llama-3-3-70b-instruct")
 
     if not api_key or api_key == "your_ibm_cloud_api_key_here":
         raise EnvironmentError(
@@ -600,7 +600,7 @@ def test_watsonx():
         test_response = model.generate(prompt="Say 'IBM Watsonx is working!'")
         return jsonify({
             "status": "connected",
-            "model": os.getenv("GRANITE_MODEL_ID", "ibm/granite-3-3-8b-instruct"),
+            "model": os.getenv("MODEL_ID", "meta-llama/llama-3-3-70b-instruct"),
             "test_response": str(test_response)[:200]
         })
     except Exception as e:

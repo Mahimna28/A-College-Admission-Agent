@@ -1,6 +1,6 @@
 # 🎓 College Admission Agent — IBM Watsonx.ai + Flask
 
-An AI-powered college admission counselling web application built with **Python Flask** and **IBM Watsonx.ai Granite models**. Features a full chat UI, admission dashboard, course explorer, eligibility checker, deadline tracker, and applicant profile management.
+An AI-powered college admission counselling web application built with **Python Flask** and **IBM Watsonx.ai (Llama 3.3 70B)**. Features a full chat UI, admission dashboard, course explorer, eligibility checker, deadline tracker, and applicant profile management.
 
 ---
 
@@ -63,7 +63,7 @@ WATSONX_API_KEY=<your IBM Cloud API key>
 WATSONX_PROJECT_ID=<your Watsonx project ID>
 WATSONX_URL=https://us-south.ml.cloud.ibm.com
 FLASK_SECRET_KEY=<a long random string>
-GRANITE_MODEL_ID=ibm/granite-3-3-8b-instruct
+MODEL_ID=meta-llama/llama-3-3-70b-instruct
 ```
 
 > **How to get credentials:**
@@ -209,7 +209,7 @@ ibmcloud ce app create --name admission-agent \
 
 | Layer | Technology |
 |-------|-----------|
-| AI    | IBM Watsonx.ai · Granite 3.3 8B Instruct |
+| AI    | IBM Watsonx.ai · Llama 3.3 70B Instruct |
 | Backend | Python 3.11 · Flask 3 |
 | Frontend | Bootstrap 5.3 · Bootstrap Icons · Vanilla JS |
 | Styling | Custom CSS · CSS variables · Dark mode |
